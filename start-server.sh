@@ -4,9 +4,9 @@ PORT=8000
 PROJECT_DIR="/Users/aditiaryan/Documents/code/llm-proxy"
 NGROK_LOG="$PROJECT_DIR/ngrok.log"
 
-# Python environment setup
-if [ -f "$PROJECT_DIR/venv/bin/python" ]; then
-    PYTHON_PATH="$PROJECT_DIR/venv/bin/python"
+# Python environment setup - updated to use .venv
+if [ -f "$PROJECT_DIR/.venv/bin/python" ]; then
+    PYTHON_PATH="$PROJECT_DIR/.venv/bin/python"
 else
     PYTHON_PATH="python"
 fi
