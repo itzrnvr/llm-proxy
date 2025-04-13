@@ -8,7 +8,7 @@ from typing import List, Dict, Any, AsyncGenerator
 
 from fastapi import HTTPException # Keep for potential re-raise? Or handle differently? Let's keep for now.
 
-from config import UPSTREAM_URL
+# from config import UPSTREAM_URL # No longer needed, URL passed dynamically
 from models import ChatCompletionRequest
 
 
@@ -145,8 +145,8 @@ async def create_proxy_error_chunk(message: str, error_type: str = "proxy_error"
     }
 
 
-async def stream_generator(request: ChatCompletionRequest, headers: dict) -> AsyncGenerator[str, None]:
-    """Async generator to handle the streaming request to the upstream API
+async def stream_generator(target_url: str, request: ChatCompletionRequest, headers: dict) -> AsyncGenerator[str, None]:
+    """Async generator to handle the streaming request to the target upstream API
        and process the response chunks."""
     is_thinking = False
     buffer = ""
@@ -160,7 +160,7 @@ async def stream_generator(request: ChatCompletionRequest, headers: dict) -> Asy
         client = httpx.AsyncClient()
         async with client.stream(
             "POST",
-            UPSTREAM_URL,
+            target_url,
             json=openai_payload,
             headers=headers,
             timeout=180.0 # Consider making timeout configurable

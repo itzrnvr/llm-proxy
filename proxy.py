@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import components from other modules
-from config import UPSTREAM_URL # Although not directly used here, good to know it's loaded
+# from config import UPSTREAM_URL # No longer needed for routing
 from models import ChatCompletionRequest
 from streaming import stream_generator
 
@@ -30,22 +30,28 @@ app.add_middleware(
 
 # --- API Endpoints ---
 
-@app.post("/v1/chat/completions",
-          summary="Proxies chat completion requests to an upstream LLM API",
-          description="Accepts OpenAI-compatible chat completion requests, forwards them to the "
-                      "configured upstream URL, and streams the response back. It processes the "
-                      "stream to separate content enclosed in <think>...</think> tags into a "
-                      "'reasoning' field in the SSE chunks.",
+@app.post("/proxy/{provider_base_url:path}/v1/chat/completions",
+          summary="Dynamically proxies chat completion requests to any upstream LLM API",
+          description="Accepts OpenAI-compatible chat completion requests. Extracts the target provider's "
+                      "base URL from the path, forwards the request (with headers and body) to the "
+                      "constructed target URL (provider_base_url + '/v1/chat/completions'), and streams "
+                      "the response back. It universally processes the stream to separate content "
+                      "enclosed in <think>...</think> tags into a 'reasoning' field in the SSE chunks.",
           response_description="A Server-Sent Events (SSE) stream. Each event contains a JSON payload "
-                               "compatible with OpenAI's streaming format, potentially with an added "
-                               "'reasoning' field in the 'delta' object for thinking steps.",
+                               "compatible with OpenAI's streaming format, with an added 'reasoning' "
+                               "field in the 'delta' object for thinking steps.",
           tags=["LLM Proxy"])
 async def chat_completion(
-    request_body: ChatCompletionRequest, # Renamed for clarity
+    provider_base_url: str, # Captured from path
+    request_body: ChatCompletionRequest,
     raw_request: Request # Keep access to raw request for headers
 ):
-    """Handles the chat completion request, prepares headers, and initiates streaming."""
-    print(f"Received request for model: {request_body.model}") # Basic logging
+    """Handles the dynamic chat completion request, constructs target URL, prepares headers, and initiates streaming."""
+    # Construct the full target URL
+    # Ensure no double slashes if provider_base_url ends with /
+    provider_base_url = provider_base_url.rstrip('/')
+    target_url = f"{provider_base_url}/v1/chat/completions"
+    print(f"Proxying request for model '{request_body.model}' to: {target_url}")
 
     # Prepare headers for the upstream request
     headers = {
@@ -63,7 +69,7 @@ async def chat_completion(
     # The actual streaming logic is handled by stream_generator
     # Pass the validated request body and constructed headers
     return StreamingResponse(
-        stream_generator(request_body, headers),
+        stream_generator(target_url, request_body, headers),
         media_type="text/event-stream"
     )
 
