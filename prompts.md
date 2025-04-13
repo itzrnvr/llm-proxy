@@ -6,9 +6,11 @@ Can you write a script that i can just execute from the terminal that starts our
 
 I need to create an webapp that helps users craft a story. It will be a chat interface with like ai chat apps. Help me understand what it would look like and what features it iwll have 
 
+test
 
 gems
 Purpose and Goals:
+
 
 
 
