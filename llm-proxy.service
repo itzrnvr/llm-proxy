@@ -5,12 +5,13 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy
-ExecStart=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
+ExecStart=/usr/bin/python3 -m uvicorn proxy:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=3
 User=github-runner
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONPATH=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target
