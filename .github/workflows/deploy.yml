@@ -46,11 +46,11 @@ jobs:
 
           [Service]
           Type=simple
-          WorkingDirectory=/home/github-runner/action-runner/llm-proxy
-          ExecStart=/home/github-runner/action-runner/llm-proxy/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
+          WorkingDirectory=$PWD
+          ExecStart=$PWD/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
           Restart=always
           RestartSec=3
-          User=github-runner
+          User=$(whoami)
           Environment=PYTHONUNBUFFERED=1
 
           [Install]
