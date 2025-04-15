@@ -1,0 +1,46 @@
+# .github/workflows/deploy.yml
+name: Deploy to VPS
+
+# Trigger this workflow on pushes to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Application
+    # Run this job on your self-hosted runner
+    runs-on: self-hosted
+
+    steps:
+      # Step 1: Check out the repository's code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Specify the Python version you use, e.g., '3.11', '3.10'
+          # Using '3.x' will use a generally available Python 3 version
+          python-version: '3.x'
+
+      # Step 3: Install the 'uv' package manager
+      # We use pip provided by setup-python to install uv itself
+      - name: Install uv
+        run: python -m pip install uv
+
+      # Step 4: Create virtual environment and install dependencies using uv
+      # 'uv sync' reads requirements.txt and installs packages into .venv
+      # It creates .venv if it doesn't exist
+      # --system-site-packages might be useful if you rely on system packages, remove if not needed
+      - name: Install dependencies
+        run: uv sync --system-site-packages
+
+      # Step 5: Restart the application service using systemd
+      # This command tells systemd to restart the service defined in
+      # /etc/systemd/system/llm-proxy.service
+      # Assumes the runner user has passwordless sudo for this command.
+      - name: Restart application service
+        run: sudo systemctl restart llm-proxy.service
