@@ -1,7 +1,6 @@
 # .github/workflows/deploy.yml
 name: Deploy to VPS
 
-# Trigger this workflow on pushes to the main branch
 on:
   push:
     branches:
@@ -10,44 +9,54 @@ on:
 jobs:
   deploy:
     name: Deploy Application
-    # Run this job on your self-hosted runner
     runs-on: self-hosted
 
     steps:
-      # Step 1: Check out the repository's code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          # Specify the Python version you use, e.g., '3.11', '3.10'
-          # Using '3.x' will use a generally available Python 3 version
           python-version: '3.x'
 
-      # Step 3: Install the 'uv' package manager
       - name: Install uv
         run: python -m pip install uv
 
-      # Step 4: Create virtual environment using uv
       - name: Create virtual environment
         run: uv venv
 
-      # Step 5: Install dependencies using uv (activating venv)
       - name: Install dependencies
         run: |
           source .venv/bin/activate
           uv pip install -r requirements.txt
 
-      # Step 6: Stop any existing server process
-      - name: Stop existing server
+      - name: Setup systemd service
         run: |
-          pkill -f 'uvicorn proxy:app --host 0.0.0.0 --port 8000' || true
-          sleep 2 # Give it a moment to shut down
+          sudo bash -c 'cat <<EOF > /etc/systemd/system/llm-proxy.service
+          [Unit]
+          Description=LLM Proxy FastAPI Service
+          After=network.target
 
-      # Step 7: Start the new server process in the background
-      - name: Start new server
+          [Service]
+          Type=simple
+          WorkingDirectory=/home/github-runner/action-runner/llm-proxy
+          ExecStart=/home/github-runner/action-runner/llm-proxy/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
+          Restart=always
+          RestartSec=3
+          User=github-runner
+          Environment=PYTHONUNBUFFERED=1
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF'
+          
+          sudo systemctl daemon-reload
+          sudo systemctl enable llm-proxy
+
+      # Add a step to restart the systemd service
+      - name: Restart llm-proxy service
         run: |
-          source .venv/bin/activate
-          nohup python -m uvicorn proxy:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
+          sudo systemctl restart llm-proxy
+          sleep 2
+          sudo systemctl status llm-proxy --no-pager

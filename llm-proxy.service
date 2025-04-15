@@ -1,29 +1,15 @@
-# /etc/systemd/system/llm-proxy.service
-
 [Unit]
-Description=LLM Proxy Application
-After=network.target # Ensure network is up before starting
+Description=LLM Proxy FastAPI Service
+After=network.target
 
 [Service]
-# User and Group to run the service as
-User=github-runner
-Group=github-runner # Assuming the primary group for the user is the same name
-
-# Working Directory: Where the code is checked out by the runner
-# IMPORTANT: Verify this path is correct on your VPS
-WorkingDirectory=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy
-
-# Command to activate venv and start the application
-# IMPORTANT: Verify the path to the activate script and .venv is correct
-ExecStart=/bin/bash -c 'source /home/github-runner/actions-runner/_work/llm-proxy/llm-proxy/.venv/bin/activate && exec python -m uvicorn proxy:app --host 0.0.0.0 --port 8000'
-
-# Restart policy
+Type=simple
+WorkingDirectory=/home/github-runner/action-runner/llm-proxy
+ExecStart=/home/github-runner/action-runner/llm-proxy/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
 Restart=always
 RestartSec=3
-
-# Environment variables (if needed)
-# Ensure this path matches WorkingDirectory
-Environment="PYTHONPATH=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy"
+User=github-runner
+Environment=PYTHONUNBUFFERED=1
 
 [Install]
-WantedBy=multi-user.target # Enable the service to start on boot
+WantedBy=multi-user.target
