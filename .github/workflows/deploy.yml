@@ -34,12 +34,20 @@ jobs:
       - name: Create virtual environment
         run: uv venv
 
-      # Step 5: Install dependencies using uv
+      # Step 5: Install dependencies using uv (activating venv)
       - name: Install dependencies
         run: |
           source .venv/bin/activate
           uv pip install -r requirements.txt
 
-      # Step 6: Restart the application service using systemd
-      - name: Restart application service
-        run: sudo systemctl restart llm-proxy.service
+      # Step 6: Stop any existing server process
+      - name: Stop existing server
+        run: |
+          pkill -f 'uvicorn proxy:app --host 0.0.0.0 --port 8000' || true
+          sleep 2 # Give it a moment to shut down
+
+      # Step 7: Start the new server process in the background
+      - name: Start new server
+        run: |
+          source .venv/bin/activate
+          nohup python -m uvicorn proxy:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
