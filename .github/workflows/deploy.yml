@@ -39,20 +39,32 @@ jobs:
 
       - name: Setup systemd service
         run: |
+          # Check if virtual environment exists
+          if [ ! -f ".venv/bin/python" ]; then
+            echo "Creating virtual environment..."
+            python -m venv .venv
+          fi
+          
+          # Install dependencies
+          .venv/bin/pip install -r requirements.txt
+          
+          # Create systemd service file with absolute paths
           sudo bash -c 'cat <<EOF > /etc/systemd/system/llm-proxy.service
           [Unit]
           Description=LLM Proxy FastAPI Service
           After=network.target
-
+          
           [Service]
           Type=simple
-          WorkingDirectory=$PWD
-          ExecStart=$PWD/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
+          WorkingDirectory=$(pwd)
+          ExecStart=$(pwd)/.venv/bin/python -m uvicorn proxy:app --host 0.0.0.0 --port 8000
           Restart=always
           RestartSec=3
           User=$(whoami)
           Environment=PYTHONUNBUFFERED=1
-
+          Environment=LD_LIBRARY_PATH=/home/github-runner/actions-runner/_work/_tool/Python/3.13.3/x64/lib
+          Environment=PYTHONPATH=$(pwd)
+          
           [Install]
           WantedBy=multi-user.target
           EOF'
