@@ -44,7 +44,6 @@ jobs:
           sudo systemctl daemon-reload
           sudo systemctl enable llm-proxy
 
-      # Add a step to restart the systemd service
       - name: Restart llm-proxy service
         run: |
           sudo systemctl restart llm-proxy
