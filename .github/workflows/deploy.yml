@@ -36,7 +36,7 @@ jobs:
       # It creates .venv if it doesn't exist
       # --system-site-packages might be useful if you rely on system packages, remove if not needed
       - name: Install dependencies
-        run: uv sync --system-site-packages
+        run: uv sync
 
       # Step 5: Restart the application service using systemd
       # This command tells systemd to restart the service defined in
