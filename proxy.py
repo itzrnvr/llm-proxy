@@ -3,12 +3,12 @@ Main FastAPI application file for the LLM proxy.
 Handles incoming requests, sets up middleware, and routes to the appropriate logic.
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException # Added HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-
+ 
 # Import components from other modules
-# from config import UPSTREAM_URL # No longer needed for routing
+from config import PREBUILT_PROVIDERS # Added PREBUILT_PROVIDERS
 from models import ChatCompletionRequest
 from streaming import stream_generator
 
@@ -73,6 +73,49 @@ async def chat_completion(
         media_type="text/event-stream"
     )
 
+# --- Prebuilt Provider Endpoint ---
+ 
+@app.post("/provider/{provider_id}/v1/chat/completions",
+          summary="Proxies chat completion requests to pre-configured LLM providers via a consistent path",
+          description="Accepts OpenAI-compatible chat completion requests using the path `/provider/{provider_id}/v1/chat/completions`. "
+                      "It uses the `provider_id` to look up the provider's **full target URL** (which might differ from `/v1/chat/completions`) "
+                      "from the `PREBUILT_PROVIDERS` config. It then forwards the request (with headers and body) "
+                      "to that exact configured URL and streams the response back, processing `<think>` tags.",
+          response_description="A Server-Sent Events (SSE) stream, processed similarly to the /proxy endpoint.",
+          tags=["LLM Proxy (Prebuilt)"])
+async def prebuilt_provider_proxy(
+    provider_id: str, # Captured from path
+    request_body: ChatCompletionRequest, # Assuming still chat completion body, adjust if needed
+    raw_request: Request # Keep access to raw request for headers
+):
+    """Handles requests for pre-configured providers using their full target URL."""
+    # Look up the provider's full target URL
+    try:
+        target_url = PREBUILT_PROVIDERS[provider_id] # Get the full URL directly
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Provider ID '{provider_id}' not found in configuration.")
+ 
+    # The target_url is now the full path from config
+    print(f"Proxying request via prebuilt provider '{provider_id}' to: {target_url}")
+ 
+    # Prepare headers for the upstream request (similar logic)
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "Authorization": raw_request.headers.get("Authorization", ""),
+    }
+    # Filter out empty Authorization header if it wasn't present
+    if not headers["Authorization"]:
+        del headers["Authorization"]
+ 
+    # Use the same stream generator
+    return StreamingResponse(
+        stream_generator(target_url, request_body, headers),
+        media_type="text/event-stream"
+    )
+ 
+# --- Health Check Endpoint ---
+ 
 @app.get("/",
          summary="Root endpoint for health check",
          description="A simple endpoint to confirm the proxy server is running.",
