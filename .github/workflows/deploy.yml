@@ -31,6 +31,12 @@ jobs:
           source .venv/bin/activate
           uv pip install -r requirements.txt
 
+      - name: Remove existing service
+        run: |
+          sudo systemctl stop llm-proxy || true
+          sudo rm -f /etc/systemd/system/llm-proxy.service
+          sudo systemctl daemon-reload
+
       - name: Setup systemd service
         run: |
           sudo bash -c 'cat <<EOF > /etc/systemd/system/llm-proxy.service
