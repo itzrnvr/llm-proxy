@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 WorkingDirectory=/home/github-runner/actions-runner/_work/llm-proxy/llm-proxy
-ExecStart=/usr/bin/python3 -m uvicorn proxy:app --host 0.0.0.0 --port 8000
+ExecStart=/bin/bash -c 'source .venv/bin/activate && python -m uvicorn proxy:app --host 0.0.0.0 --port 8000'
 Restart=always
 RestartSec=3
 User=github-runner
