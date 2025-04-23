@@ -1,0 +1,30 @@
+providers:
+  - name: zanity
+    baseUrl: api.zanity.xyz
+    models: # This is now a list
+      # Simple model definition: alias and upstream model are both "grok-3-beta"
+      - grok-3-beta
+
+      # Model definition with overrides:
+      - alias: grok-3-beta_high      # Alias exposed by your proxy
+        upstream_model: grok-3-beta  # Actual model name for zanity provider
+        custom_params:               # Optional custom parameters for this alias
+          temperature: 0.9
+          # max_tokens: 2048
+
+      # Another simple model definition
+      - some-other-model
+
+      # Another model with overrides (e.g., different upstream name)
+      - alias: fancy_model_alias
+        upstream_model: actual-fancy-model-v2
+        # custom_params: ... # Optional
+
+# You could add other providers here following the same structure
+# - name: another_provider
+#   baseUrl: ...
+#   models:
+#     - model-x
+#     - alias: model-y-alias
+#       upstream_model: model-y
+

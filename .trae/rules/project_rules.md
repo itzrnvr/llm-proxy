@@ -1,0 +1,2 @@
+- Our project uses uv and venv and pip
+- Make sure all commands that can use uv must use it.
